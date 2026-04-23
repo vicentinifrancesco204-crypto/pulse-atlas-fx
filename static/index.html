@@ -1,0 +1,273 @@
+<!doctype html>
+<html lang="it">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Pulse Atlas FX</title>
+    <meta name="description" content="Bias forex live, intraday AI analysis e liquidity targets aggiornati in tempo reale per EUR/USD e GBP/USD.">
+    <meta name="theme-color" content="#0e1726">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="format-detection" content="telephone=no">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=IBM+Plex+Mono:wght@400;500&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="manifest" href="/manifest.webmanifest?v=6">
+    <link rel="icon" href="/static/icon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="/static/styles.css?v=6">
+  </head>
+  <body>
+    <div class="background-orb orb-a"></div>
+    <div class="background-orb orb-b"></div>
+    <div class="shell">
+      <header class="hero reveal">
+        <div class="eyebrow">
+          <span class="live-dot"></span>
+          Bias live, no simulazione
+        </div>
+        <div class="hero-grid">
+          <div class="hero-copy-stack">
+            <p class="kicker">Pulse Atlas FX</p>
+            <p class="mindset-label">Trading mindset of the minute</p>
+            <h1 id="mindset-phrase">--</h1>
+            <p id="mindset-subtitle" class="hero-copy">--</p>
+            <div class="hero-analysis-card">
+              <p class="card-kicker">AI intraday analysis</p>
+              <h3 id="hero-analysis-title">--</h3>
+              <p id="hero-analysis-summary" class="muted">Analisi in caricamento...</p>
+              <p id="hero-analysis-body" class="muted">Sto leggendo il contesto live del mercato.</p>
+              <div id="hero-targets" class="target-strip"></div>
+            </div>
+          </div>
+          <div class="hero-panel">
+            <label class="field">
+              <span>Pair</span>
+              <select id="pair-select"></select>
+            </label>
+            <button id="refresh-button" class="primary-button" type="button">Refresh now</button>
+            <div class="hero-meta">
+              <div>
+                <span class="meta-label">Last refresh</span>
+                <strong id="last-refresh">in attesa</strong>
+              </div>
+              <div>
+                <span class="meta-label">Feed status</span>
+                <strong id="feed-state">verifica...</strong>
+              </div>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <main class="content">
+        <section class="bias-grid reveal" id="overview">
+          <article class="card bias-card reveal-card" id="general-bias-card">
+            <div class="card-head">
+              <p class="card-kicker">General bias</p>
+              <span id="general-chip" class="tone-chip neutral">Neutrale</span>
+            </div>
+            <h2 id="general-title">--</h2>
+            <p id="general-summary" class="muted">In calcolo...</p>
+            <div class="meter">
+              <div class="meter-fill" id="general-meter"></div>
+            </div>
+            <ul id="general-drivers" class="driver-list"></ul>
+          </article>
+
+          <article class="card bias-card reveal-card" id="intraday-bias-card">
+            <div class="card-head">
+              <p class="card-kicker">Intraday bias live</p>
+              <span id="intraday-chip" class="tone-chip neutral">Neutrale</span>
+            </div>
+            <h2 id="intraday-title">--</h2>
+            <p id="intraday-summary" class="muted">In calcolo...</p>
+            <div class="meter">
+              <div class="meter-fill" id="intraday-meter"></div>
+            </div>
+            <ul id="intraday-drivers" class="driver-list"></ul>
+          </article>
+        </section>
+
+        <section class="reveal">
+          <div class="section-head">
+            <div>
+              <p class="card-kicker">Live market folder</p>
+              <h3>Snapshot, liquidity map e livelli operativi</h3>
+            </div>
+          </div>
+          <article class="card folder-card">
+            <button id="live-folder-toggle" class="folder-toggle" type="button" aria-expanded="false">
+              <div>
+                <p class="folder-title">Open folder</p>
+                <p id="live-folder-summary" class="muted folder-summary">Sto preparando il quadro live della giornata.</p>
+              </div>
+              <span id="live-folder-count" class="folder-count">0 panel</span>
+            </button>
+            <div id="live-folder-content" class="folder-content hidden">
+              <div class="folder-panel-grid">
+                <article class="card spotlight nested-card" id="snapshot-card">
+                  <div class="card-head">
+                    <p class="card-kicker">Live snapshot</p>
+                    <span id="pair-badge" class="pill">EUR/USD</span>
+                  </div>
+                  <div class="price-line">
+                    <strong id="spot-price">--</strong>
+                    <span id="spot-change" class="price-change">--</span>
+                  </div>
+                  <p id="spot-note" class="muted">Caricamento feed...</p>
+                  <div class="mini-stats">
+                    <div>
+                      <span>Range 1m</span>
+                      <strong id="mini-1m">--</strong>
+                    </div>
+                    <div>
+                      <span>Range 5m</span>
+                      <strong id="mini-5m">--</strong>
+                    </div>
+                  </div>
+                </article>
+
+                <article class="card nested-card">
+                  <div class="section-head">
+                    <div>
+                      <p class="card-kicker">Liquidity levels</p>
+                      <h3>Zone da controllare adesso</h3>
+                    </div>
+                  </div>
+                  <div id="levels-grid" class="levels-grid"></div>
+                </article>
+              </div>
+
+              <article class="card nested-card">
+                <div class="section-head">
+                  <div>
+                    <p class="card-kicker">Intraday liquidity map</p>
+                    <h3>Livelli di liquidity e target live della giornata</h3>
+                  </div>
+                </div>
+                <div id="intraday-zones" class="zone-grid chart-zone-grid"></div>
+              </article>
+            </div>
+          </article>
+        </section>
+
+        <section class="reveal">
+          <div class="section-head">
+            <div>
+              <p class="card-kicker">London folder</p>
+              <h3>Range medio e AI analysis 09:00-10:00 Rome</h3>
+            </div>
+          </div>
+          <article class="card folder-card">
+            <button id="london-folder-toggle" class="folder-toggle" type="button" aria-expanded="false">
+              <div>
+                <p class="folder-title">Open folder</p>
+                <p id="london-folder-summary" class="muted folder-summary">Sto preparando il piano London della giornata.</p>
+              </div>
+              <span id="london-folder-count" class="folder-count">0 zone</span>
+            </button>
+            <div id="london-folder-content" class="folder-content hidden">
+              <article class="card nested-card">
+                <div class="section-head">
+                  <div>
+                    <p class="card-kicker">London playbook</p>
+                    <h3>Range medio 30d e AI analysis 09:00-10:00 Rome</h3>
+                  </div>
+                </div>
+                <div id="london-stats" class="levels-grid"></div>
+                <p id="london-summary" class="muted"></p>
+                <p id="london-analysis" class="muted london-analysis"></p>
+                <div id="london-zones" class="zone-grid"></div>
+              </article>
+            </div>
+          </article>
+        </section>
+
+        <section class="reveal">
+          <div class="section-head">
+            <div>
+              <p class="card-kicker">Historical volatility folder</p>
+              <h3>Archive cliccabile degli spike gia visti</h3>
+            </div>
+          </div>
+          <article class="card folder-card">
+            <button id="historical-folder-toggle" class="folder-toggle" type="button" aria-expanded="false">
+              <div>
+                <p class="folder-title">Open folder</p>
+                <p id="historical-folder-summary" class="muted folder-summary">Sto costruendo l'archive degli spike.</p>
+              </div>
+              <span id="historical-folder-count" class="folder-count">0 spike</span>
+            </button>
+            <div id="historical-folder-content" class="folder-content hidden"></div>
+          </article>
+        </section>
+
+        <section class="reveal" id="future-catalog">
+          <div class="section-head">
+            <div>
+              <p class="card-kicker">Future volatility folder</p>
+              <h3>Quando potrebbero tornare spike simili</h3>
+            </div>
+          </div>
+          <article class="card folder-card">
+            <button id="future-folder-toggle" class="folder-toggle" type="button" aria-expanded="false">
+              <div>
+                <p class="folder-title">Open folder</p>
+                <p id="future-folder-summary" class="muted folder-summary">Sto leggendo le finestre future di volatilita.</p>
+              </div>
+              <span id="future-folder-count" class="folder-count">0 window</span>
+            </button>
+            <div id="future-folder-content" class="folder-content hidden">
+              <div class="catalog-grid">
+                <article class="card nested-card">
+                  <div class="section-head compact">
+                    <div>
+                      <p class="card-kicker">Macro events</p>
+                      <h4>Finestre future guidate da calendario</h4>
+                    </div>
+                  </div>
+                  <div id="macro-list" class="catalog-list"></div>
+                </article>
+                <article class="card nested-card">
+                  <div class="section-head compact">
+                    <div>
+                      <p class="card-kicker">Recurring windows</p>
+                      <h4>Orari che stanno gia producendo range sopra media</h4>
+                    </div>
+                  </div>
+                  <div id="session-list" class="catalog-list"></div>
+                </article>
+              </div>
+            </div>
+          </article>
+        </section>
+      </main>
+    </div>
+
+    <dialog id="spike-dialog" class="spike-dialog">
+      <div class="dialog-shell">
+        <div class="dialog-head">
+          <div>
+            <p class="card-kicker">Historical spike detail</p>
+            <h3 id="dialog-title">--</h3>
+            <p id="dialog-subtitle" class="muted"></p>
+          </div>
+          <button id="dialog-close" class="dialog-close" type="button">Close</button>
+        </div>
+        <p id="dialog-summary" class="muted"></p>
+        <div id="dialog-metrics" class="metric-row"></div>
+        <p id="dialog-reason" class="muted"></p>
+        <div class="dialog-section">
+          <p class="card-kicker">Liquidity map</p>
+          <div id="dialog-liquidity" class="notes-stack"></div>
+        </div>
+        <div class="dialog-section">
+          <p class="card-kicker">Reference levels</p>
+          <div id="dialog-levels" class="levels-grid"></div>
+        </div>
+      </div>
+    </dialog>
+
+    <script src="/static/app.js?v=6" defer></script>
+  </body>
+</html>
