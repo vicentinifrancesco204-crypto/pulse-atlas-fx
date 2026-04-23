@@ -1,0 +1,7 @@
+services:
+  - type: web
+    name: pulse-atlas-fx
+    env: docker
+    plan: starter
+    autoDeploy: true
+    healthCheckPath: /healthz
