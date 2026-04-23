@@ -1,0 +1,17 @@
+{
+  "name": "Pulse Atlas FX",
+  "short_name": "PulseAtlas",
+  "description": "Bias forex live con catalogo dei picchi di volatilità già visti e delle finestre future più probabili.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#08111f",
+  "theme_color": "#0e1726",
+  "icons": [
+    {
+      "src": "/static/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
