@@ -203,6 +203,7 @@ function renderDrivers(target, items) {
 }
 
 function renderLevels(levels, pairCode) {
+  const medianRange = levels.median_15m_range_pips ?? levels.median_5m_range_pips;
   const entries = [
     ["Session open", levels.session_open],
     ["Day high", levels.day_high],
@@ -210,7 +211,7 @@ function renderLevels(levels, pairCode) {
     ["Mid range", levels.day_mid],
     ["4h high", levels.four_hour_high],
     ["4h low", levels.four_hour_low],
-    ["Median 5m range", `${levels.median_5m_range_pips.toFixed(1)} pips`],
+    ["Median M15 range", `${medianRange.toFixed(1)} pips`],
     ["Last hour return", `${levels.recent_return_pips.toFixed(1)} pips`],
   ];
 
