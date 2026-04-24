@@ -244,6 +244,40 @@ def floor_to_half_hour(ts: datetime) -> datetime:
     return ts.replace(minute=minute, second=0, microsecond=0)
 
 
+def floor_to_interval(ts: datetime, minutes: int) -> datetime:
+    total_minutes = ts.hour * 60 + ts.minute
+    floored = total_minutes - (total_minutes % minutes)
+    return ts.replace(hour=floored // 60, minute=floored % 60, second=0, microsecond=0)
+
+
+def aggregate_bars(bars: list[dict[str, Any]], bucket_minutes: int, source_minutes: int) -> list[dict[str, Any]]:
+    expected_points = max(1, bucket_minutes // source_minutes)
+    grouped: list[list[dict[str, Any]]] = []
+
+    for bar in bars:
+        bucket_start = floor_to_interval(bar["time"], bucket_minutes)
+        if not grouped or floor_to_interval(grouped[-1][0]["time"], bucket_minutes) != bucket_start:
+            grouped.append([bar])
+        else:
+            grouped[-1].append(bar)
+
+    aggregated: list[dict[str, Any]] = []
+    for chunk in grouped:
+        if len(chunk) < expected_points:
+            continue
+        bucket_start = floor_to_interval(chunk[-1]["time"], bucket_minutes)
+        aggregated.append(
+            {
+                "time": bucket_start,
+                "open": chunk[0]["open"],
+                "high": max(item["high"] for item in chunk),
+                "low": min(item["low"] for item in chunk),
+                "close": chunk[-1]["close"],
+            }
+        )
+    return aggregated
+
+
 def session_label(ts: datetime) -> str:
     minutes = ts.hour * 60 + ts.minute
     if 8 * 60 <= minutes < 10 * 60 + 30:
@@ -471,29 +505,28 @@ def build_general_bias(pair: str, daily_bars: list[dict[str, Any]], hourly_bars:
     }
 
 
-def build_intraday_bias(pair: str, one_minute: list[dict[str, Any]], five_minute: list[dict[str, Any]]) -> dict[str, Any]:
+def build_intraday_bias(pair: str, five_minute: list[dict[str, Any]]) -> dict[str, Any]:
     pip_size = SUPPORTED_PAIRS[pair]["pip_size"]
-    closes_5m = [bar["close"] for bar in five_minute]
-    current = closes_5m[-1]
-    ema9 = ema(closes_5m[-50:], 9)
-    ema21 = ema(closes_5m[-100:], 21)
-    ema55 = ema(closes_5m[-160:], 55)
-    recent_return = current - closes_5m[-13] if len(closes_5m) > 12 else current - closes_5m[0]
+    fifteen_minute = aggregate_bars(five_minute, 15, 5)
+    closes_15m = [bar["close"] for bar in fifteen_minute]
+    current = closes_15m[-1]
+    ema9 = ema(closes_15m[-30:], 9)
+    ema21 = ema(closes_15m[-70:], 21)
+    ema55 = ema(closes_15m[-170:], 55)
+    recent_return = current - closes_15m[-5] if len(closes_15m) > 4 else current - closes_15m[0]
     now = datetime.now(ROME_TZ)
-    today_bars = [bar for bar in five_minute if bar["time"].date() == now.date()]
+    today_bars = [bar for bar in fifteen_minute if bar["time"].date() == now.date()]
     if not today_bars:
-        today_bars = five_minute[-48:]
+        today_bars = fifteen_minute[-32:]
     session_open = today_bars[0]["open"]
     day_high = max(bar["high"] for bar in today_bars)
     day_low = min(bar["low"] for bar in today_bars)
     day_mid = (day_high + day_low) / 2
-    lookback_4h = five_minute[-49:-1] if len(five_minute) > 49 else five_minute[:-1]
+    lookback_4h = fifteen_minute[-17:-1] if len(fifteen_minute) > 17 else fifteen_minute[:-1]
     previous_4h_high = max((bar["high"] for bar in lookback_4h), default=current)
     previous_4h_low = min((bar["low"] for bar in lookback_4h), default=current)
-    micro_closes = [bar["close"] for bar in one_minute[-30:]]
-    micro_impulse = micro_closes[-1] - micro_closes[0] if len(micro_closes) >= 2 else 0.0
-    median_5m_range = percentile(
-        [pip_value(bar["high"] - bar["low"], pip_size) for bar in five_minute[-180:] if bar["high"] >= bar["low"]],
+    median_15m_range = percentile(
+        [pip_value(bar["high"] - bar["low"], pip_size) for bar in fifteen_minute[-180:] if bar["high"] >= bar["low"]],
         0.5,
     )
 
@@ -501,50 +534,45 @@ def build_intraday_bias(pair: str, one_minute: list[dict[str, Any]], five_minute
     drivers: list[str] = []
     if current > ema9 > ema21 > ema55:
         score += 3
-        drivers.append("Bullish 5m alignment sopra EMA 9/21/55")
+        drivers.append("Bullish M15 alignment sopra EMA 9/21/55")
     elif current < ema9 < ema21 < ema55:
         score -= 3
-        drivers.append("Bearish 5m alignment sotto EMA 9/21/55")
+        drivers.append("Bearish M15 alignment sotto EMA 9/21/55")
 
     if recent_return > 0:
         score += 1
-        drivers.append("Ultima ora in acceleration positiva")
+        drivers.append("Ultima ora M15 in acceleration positiva")
     elif recent_return < 0:
         score -= 1
-        drivers.append("Ultima ora in acceleration negativa")
+        drivers.append("Ultima ora M15 in acceleration negativa")
 
     if current > session_open:
         score += 1
-        drivers.append("Prezzo sopra session open")
+        drivers.append("Prezzo M15 sopra session open")
     elif current < session_open:
         score -= 1
-        drivers.append("Prezzo sotto session open")
+        drivers.append("Prezzo M15 sotto session open")
 
     if current > day_mid:
         score += 1
-        drivers.append("Struttura appoggiata sulla meta alta del day range")
+        drivers.append("Struttura M15 appoggiata sulla meta alta del day range")
     elif current < day_mid:
         score -= 1
-        drivers.append("Struttura nella meta bassa del day range")
+        drivers.append("Struttura M15 nella meta bassa del day range")
 
     if current > previous_4h_high:
         score += 1
-        drivers.append("Breakout sopra il 4h high")
+        drivers.append("Breakout M15 sopra il 4h high")
     elif current < previous_4h_low:
         score -= 1
-        drivers.append("Breakout sotto il 4h low")
-
-    if micro_impulse > 0:
-        score += 1
-    elif micro_impulse < 0:
-        score -= 1
+        drivers.append("Breakout M15 sotto il 4h low")
 
     return {
         "label": direction_label(score),
         "tone": direction_tone(score),
         "score": score,
         "confidence": int(clamp(52 + abs(score) * 7, 52, 93)),
-        "summary": "Intraday bias aggiornato live su flow 1m e 5m, senza simulazione.",
+        "summary": "Intraday bias aggiornato live solo su struttura M15, senza simulazione.",
         "drivers": drivers[:5],
         "levels": {
             "session_open": session_open,
@@ -553,7 +581,8 @@ def build_intraday_bias(pair: str, one_minute: list[dict[str, Any]], five_minute
             "day_mid": day_mid,
             "four_hour_high": previous_4h_high,
             "four_hour_low": previous_4h_low,
-            "median_5m_range_pips": median_5m_range,
+            "median_15m_range_pips": median_15m_range,
+            "median_5m_range_pips": median_15m_range,
             "recent_return_pips": recent_return / pip_size if pip_size else 0.0,
         },
     }
@@ -1238,7 +1267,7 @@ def build_dashboard(pair: str) -> dict[str, Any]:
         today_five = five_minute[-48:]
 
     general_bias = build_general_bias(pair, daily, hourly)
-    intraday_bias = build_intraday_bias(pair, one_minute, five_minute)
+    intraday_bias = build_intraday_bias(pair, five_minute)
     historical_spikes = detect_spikes(pair, one_minute, five_minute, calendar)
     one_stats, five_stats, bucket_scores = build_bucket_maps(pair, one_minute, five_minute)
     future_macro = build_future_macro(pair, calendar, bucket_scores, one_stats, five_stats, base_spike_1m, base_spike_5m)
